@@ -5,6 +5,7 @@ export class SharedStore {
   session: Session | undefined = undefined;
   sessions: Session[] = [];
   callback: (() => void) | undefined = undefined;
+  tick: number = 0;
 
   public registerSession = () => {
     const sessionHash = uuidv4();
@@ -12,6 +13,10 @@ export class SharedStore {
 
     const currentSessions = getObjectFromItem<string[]>("sessions") || [];
     setObjectToItem("sessions", [...currentSessions, sessionHash]);
+
+    if (currentSessions.length === 0) {
+      setObjectToItem("masterSession", sessionHash);
+    }
 
     this.sessions =
       getObjectFromItem<string[]>("sessions")?.map((s) => new Session(s)) || [];
@@ -29,6 +34,19 @@ export class SharedStore {
         "sessions",
         currentSessions.filter((s) => s !== sessionHash)
       );
+
+      const masterSession = getObjectFromItem<string>("masterSession");
+      if (masterSession === sessionHash) {
+        setObjectToItem(
+          "masterSession",
+          currentSessions.filter((s) => s !== sessionHash)[0]
+        );
+      }
+
+      localStorage.removeItem(`session-${this.session?.sessionHash}-height`);
+      localStorage.removeItem(`session-${this.session?.sessionHash}-width`);
+      localStorage.removeItem(`session-${this.session?.sessionHash}-x`);
+      localStorage.removeItem(`session-${this.session?.sessionHash}-y`);
     }
 
     this.session = undefined;
@@ -48,7 +66,14 @@ export class SharedStore {
     this.sessions = (getObjectFromItem<string[]>("sessions") || []).map(
       (s) => new Session(s)
     );
+    this.tick = getObjectFromItem<number>("tick") || 0;
     this.callback?.();
+  };
+
+  public incrementTick = () => {
+    const tick = getObjectFromItem<number>("tick") || 0;
+    setObjectToItem("tick", tick + 1);
+    this.tick = tick + 1;
   };
 }
 
@@ -89,6 +114,11 @@ export class Session {
 
   public get y() {
     return getObjectFromItem<number>(`session-${this.sessionHash}-y`) || 0;
+  }
+
+  public get isMasterSession() {
+    const masterSession = getObjectFromItem<string>("masterSession");
+    return masterSession === this.sessionHash;
   }
 }
 
