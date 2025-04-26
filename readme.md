@@ -1,4 +1,4 @@
-# **Portfolio Project: Multi-Window 3D Particle Interaction**
+# **Links**
 
 ## **Overview**
 
